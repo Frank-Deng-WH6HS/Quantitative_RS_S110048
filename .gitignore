@@ -17,8 +17,10 @@ Zotero_Record/zotero.sqlite?*
 
 Classware/*.pdf
 
+Material/*
 Source/*
 Process/*
+!Process/Lorentz_Mie_PyFromF/
 Output_*/*
 Output_*/*/
 
