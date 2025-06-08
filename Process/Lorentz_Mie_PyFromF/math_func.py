@@ -18,6 +18,7 @@ def machine_precision():
 #求一元函数零点的ZeroIn算法(结合了二分法, 线性插值和逆二次插值[1-2])
 def zeroin(a_x: np.float64, b_x: np.float64, 
     f: callable, tol: np.float64) -> np.float64: 
+    '''Usage: x = zeroin(a_x, b_x, f, tol)'''
     #Label 10: 获取浮点数的机器精度
     eps = machine_precision(); 
     #Label 15: 初始化
@@ -86,6 +87,7 @@ def zeroin(a_x: np.float64, b_x: np.float64,
 #在后续的power函数中, f_trivar将通过lambda表达式重新构造一元函数f
 def f_trivar(a: np.float64, b: np.float64, 
     r_1: np.float64) -> np.float64: 
+    '''Usage: r = f_trivar(a, b, r_1)'''
     r_2 = (fp64(1e0) + b) * fp64(2e0) * a - r_1; 
     f = (r_2 - r_1) / np.log(r_2 / r_1) - a; 
     return f; 
@@ -102,3 +104,61 @@ def power(a: np.float64, b: np.float64,
     r_max = (fp64(1e0) + b) * 2 * a - r_min; 
     return (r_min, r_max); 
 
+#Power函数
+#由于python传参方式的特殊性, 此处强制要求对z和w执行类型检查
+#返回的结果为None
+def gauss(n: int, ind_1: int, ind_2: int, 
+    z: np.ndarray, w: np.ndarray) -> tuple: 
+    '''Usage: gauss(n, ind_1, ind_2, z, w), where z and w will be modified. '''
+    #输入参数类型检查
+    if type(z) is not np.ndarray: 
+        raise TypeError("z ")
+    if type(w) is not np.ndarray: 
+        raise 
+    #正式计算
+    a = fp64(1e0); b = fp64(2e0); c = fp64(3e0); 
+    ind = n % 2; k = n // 2 + ind; f = fp64(n); 
+    for i in range(1, k + 1): 
+        m = n + 1 - i; 
+        if i == 1: 
+            x = a - b /((f + a) * f); 
+        if i == 2: 
+            x = (z_[n] -a ) * fp64(4) + z_[n]
+        if i == 3: 
+            x = (z_[n - 1] - z_[n]) * fp64(1.6e0) + z_[n - 1]; 
+        if i > 3: 
+            x = (z_[m + 1] - z_[m + 2]) * c + z_[m + 3]; 
+        if i == k and ind == 1: 
+            x = fp64(0e0); 
+        n_iter = 0; 
+        check = machine_precision(); 
+        first_loop_lbl10 = True; 
+        pb = np.inf; 
+        while abs(pb) > check * abs(x) or first_loop_lbl10: 
+            #label 10: 
+            pb = 1; 
+            n_iter += 1; 
+            if not (n_iter <= 100): 
+                check *= fp64(10e0); 
+            #Label 15: 
+            pc = x; dj = a; 
+            for j in range(2, n + 1): 
+                dj += a; 
+                pa = pb; pb = pc; 
+                pc = x * pb + (x * pb - pa) * (dj - a) / dj; 
+            pa = a / ((pb - x * pc) * f); 
+            pb = pa * pc * (a - x ** 2); 
+            x -= pb; 
+            first_loop_lbl10 = False; 
+        z[m] = x; w[m] = pa ** 2 * (a - x ** 2); 
+        if ind_1 == 0: 
+            w_[m] *= b; 
+        if i == k and ind == 1: 
+            continue; 
+        z_[i] = -z_[m]; w_[i] = w_[m]; 
+    #Label 100: 
+    pass; #原本这里是if-else, 每个分支都有一个print
+    #Label 115: 
+    if not (ind_1 == 0): 
+        z_ += a; z_ /= b; 
+    return (z_, w_); 
