@@ -21,6 +21,7 @@ Material/*
 Source/*
 Process/*
 !Process/Lorentz_Mie_PyFromF/
+!Process/pyfunc_type/
 Output_*/*
 Output_*/*/
 
