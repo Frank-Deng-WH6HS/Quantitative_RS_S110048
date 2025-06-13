@@ -115,11 +115,15 @@ def power(a: np.float64, b: np.float64,
 
 #Power函数
 #由于python传参方式的特殊性, 此处强制要求对z和w执行类型检查, 要求
-#二者均须为可变(mutable)类型对象np.ndarray, 方可通过传引用方式修改. 
+#二者均须为可变(mutable)对象np.ndarray, 方可通过传引用方式修改. 
 #返回的结果为None
 def gauss(n: int, ind_1: int, ind_2: int, 
-    z: np.ndarray, w: np.ndarray) -> tuple: 
-    '''Usage: gauss(n, ind_1, ind_2, z, w), where z and w will be modified. '''
+    z: np.ndarray, w: np.ndarray): 
+    '''
+    Usage: gauss(n, ind_1, ind_2, z, w)
+        z and w are both n_pl-element 1-D ndarrays, requiring that n ≤ n_pl; 
+        z and w will be modified. 
+    '''
     pyfunc_type.type_check(); 
     a = fp64(1e0); b = fp64(2e0); c = fp64(3e0); 
     ind = n % 2; k = n // 2 + ind; f = fp64(n); 
@@ -167,3 +171,38 @@ def gauss(n: int, ind_1: int, ind_2: int,
     if not (ind_1 == 0): 
         z += a; z /= b; 
 
+#Gener函数
+#由于python传参方式的特殊性, 其用法改为gener(u, l1_max, p, coef, d6)
+#强制要求对p执行类型检查, 要求二者均须为可变(mutable)对象np.ndarray, 
+#方可通过传引用方式修改. 
+#返回的结果为None
+def gener(u: np.float64, l1_max: int, 
+         p: np.ndarray, coef: np.ndarray, d6: np.float64):
+    '''
+    Usage: gener(u, l1_max, p, coef, d6)
+        p and coef are 4-by-n_pl and 8-by-npl ndarray, respectively; 
+        p[n - 1] and coef[n - 1] are both n_pl-element 1-D ndarrays, indicating
+        Pn and COEFn in original scripts, respectively; 
+        p will be modified. 
+    '''
+    pyfunc_type.type_check(); 
+    dup = fp64(1e0) + u; dum = fp64(1e0) - u; du = u ** 2; 
+    #计算P1(1), P1(2), P1(3), ..., P4(3)
+    p[: , 0] = np.array([1, 0, 0, 0], dtype=fp64); 
+    p[: , 1] = np.array([u, 0, 0, 0], dtype=fp64); 
+    p[: , 2] = np.array([0.5e0, 0.25e0, 0.25e0, d6], dtype=fp64); 
+    p[: , 2] *= np.array([3e0 * du - 1e0, dup ** 2, dum ** 2, du - 1e0]); 
+    #利用二阶递推, 构造P1至P4从第四项起的所有内容
+    for idx in range(3, l1_max): 
+        idx1m = idx - 1; idx2m = idx - 2; 
+        c = coef[0:7, idx1m].flatten(); 
+        cu_1 = c[1] * u; cu_2 = c[5] * u; dl = fp64(idx2m); 
+        term_p_l1 = np.array([cu_1, cu_2 - c[6], cu_2 + c[6], cu_1]); 
+        term_p_l1 *= p[: , idxm1]; 
+        term_p_l3 = np.array([dl, c[7], c[7], c[3]]); 
+        term_p_l3 *= p[: , idxm2]; 
+        term_p_l2 = c[[0, 4, 4, 2]]; 
+        term_p_l2 *= (cp_l1 - cp_l3); 
+        p[:, idx] = term_p_l2; 
+
+    
