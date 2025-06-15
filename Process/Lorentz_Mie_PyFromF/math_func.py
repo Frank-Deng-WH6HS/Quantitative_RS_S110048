@@ -126,18 +126,18 @@ def gauss(n: int, ind_1: int, ind_2: int,
     '''
     pyfunc_type.type_check(); 
     a = fp64(1e0); b = fp64(2e0); c = fp64(3e0); 
-    ind = n % 2; k = n // 2 + ind; f = fp64(n); 
-    for i in range(1, k + 1): 
-        m = n + 1 - i; 
-        if i == 1: 
+    ind = n % 2; k = n // 2 + ind - 1; f = fp64(n); 
+    for i in range(0, k): 
+        m = n - 1 - i; 
+        if i == 0: 
             x = a - b /((f + a) * f); 
+        if i == 1: 
+            x = (z[n - 1] - a) * fp64(4e0) + z[n - 1]
         if i == 2: 
-            x = (z[n] - a) * fp64(4) + z[n]
-        if i == 3: 
-            x = (z[n - 1] - z[n]) * fp64(1.6e0) + z[n - 1]; 
-        if i > 3: 
+            x = (z[n - 2] - z[n - 1]) * fp64(1.6e0) + z[n - 1]; 
+        if i > 2: 
             x = (z[m + 1] - z[m + 2]) * c + z[m + 3]; 
-        if i == k and ind == 1: 
+        if i == k - 1 and ind == 1: 
             x = fp64(0e0); 
         n_iter = 0; 
         check = machine_precision(); 
@@ -145,7 +145,7 @@ def gauss(n: int, ind_1: int, ind_2: int,
         pb = np.inf; 
         while abs(pb) > check * abs(x) or first_loop_lbl10: 
             #label 10: 
-            pb = 1; 
+            pb = fp64(1e0); 
             n_iter += 1; 
             if not (n_iter <= 100): 
                 check *= fp64(10e0); 
