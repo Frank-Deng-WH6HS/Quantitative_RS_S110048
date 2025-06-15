@@ -17,5 +17,6 @@
 import numpy as np; 
 import pyfunc_type; 
 from . import math_func; 
+from . import scattering_io; 
 from .scattering_io import LorentzMieScatteringConfig; 
 from .scattering_io import LorentzMieScatteringResult; 
