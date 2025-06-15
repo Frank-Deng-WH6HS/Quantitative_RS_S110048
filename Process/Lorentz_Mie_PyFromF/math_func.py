@@ -1,4 +1,4 @@
-#Lorentz-Mie散射代码主要数学计算函数. 
+#Lorentz-Mie散射代码主要数学计算函数. 原始代码由Mishchenko M I以Fortran写成. 
 
 #参考文献: 
 #[1]上海计算技术研究所. 电子计算机算法手册[M]. 上海: 上海教育出版社, 1982. 
@@ -10,6 +10,7 @@
 from . import np; 
 from numpy import float64 as fp64; 
 from . import pyfunc_type; 
+from .compatibility import do, span, real; 
 
 #获取当前系统浮点数的机器精度
 def machine_precision(): 
@@ -119,23 +120,23 @@ def gauss(n: int, ind_1: int, ind_2: int,
     z: np.ndarray, w: np.ndarray): 
     '''
     Usage: gauss(n, ind_1, ind_2, z, w)
-        z and w are both n_pl-element 1-D ndarrays, requiring that n ≤ n_pl; 
+        z and w are ndarrays, 
         z and w will be modified. 
     '''
     pyfunc_type.type_check(); 
     a = fp64(1e0); b = fp64(2e0); c = fp64(3e0); 
-    ind = n % 2; k = n // 2 + ind - 1; f = fp64(n); 
-    for i in range(0, k): 
-        m = n - 1 - i; 
-        if i == 0: 
-            x = a - b /((f + a) * f); 
+    ind = n % 2; k = n // 2 + ind; f = fp64(n); 
+    for i in do(1, k): 
+        m = n + 1 - i; 
         if i == 1: 
-            x = (z[n - 1] - a) * fp64(4e0) + z[n - 1]
+            x = a - b /((f + a) * f); 
         if i == 2: 
-            x = (z[n - 2] - z[n - 1]) * fp64(1.6e0) + z[n - 1]; 
-        if i > 2: 
+            x = (z[n] - a) * fp64(4e0) + z[n]
+        if i == 3: 
+            x = (z[n - 1] - z[n]) * fp64(1.6e0) + z[n - 1]; 
+        if i > 3: 
             x = (z[m + 1] - z[m + 2]) * c + z[m + 3]; 
-        if i == k - 1 and ind == 1: 
+        if i == k and ind == 1: 
             x = fp64(0e0); 
         n_iter = 0; 
         check = machine_precision(); 
@@ -149,7 +150,7 @@ def gauss(n: int, ind_1: int, ind_2: int,
                 check *= fp64(10e0); 
             #Label 15: 
             pc = x; dj = a; 
-            for j in range(2, n + 1): 
+            for j in do(2, n): 
                 dj += a; 
                 pa = pb; pb = pc; 
                 pc = x * pb + (x * pb - pa) * (dj - a) / dj; 
@@ -157,7 +158,7 @@ def gauss(n: int, ind_1: int, ind_2: int,
             pb = pa * pc * (a - x ** 2); 
             x -= pb; 
             first_loop_lbl10 = False; 
-        z[m] = x; w[m] = pa ** 2 * (a - x ** 2); 
+        z[m] = x; w[m] = (pa ** 2) * (a - x ** 2); 
         if ind_1 == 0: 
             w[m] *= b; 
         if i == k and ind == 1: 
@@ -178,29 +179,28 @@ def gener(u: np.float64, l1_max: int,
          p: np.ndarray, coef: np.ndarray, d6: np.float64):
     '''
     Usage: gener(u, l1_max, p, coef, d6)
-        p and coef are 4-by-n_pl and 8-by-npl ndarray, respectively; 
-        p[n - 1] and coef[n - 1] are both n_pl-element 1-D ndarrays, indicating
-        Pn and COEFn in original scripts, respectively; 
+        p and coef are ndarrays, 
         p will be modified. 
     '''
     pyfunc_type.type_check(); 
     dup = fp64(1e0) + u; dum = fp64(1e0) - u; du = u ** 2; 
     #计算P1(1), P1(2), P1(3), ..., P4(3)
-    p[: , 0] = np.array([1, 0, 0, 0], dtype=fp64); 
-    p[: , 1] = np.array([u, 0, 0, 0], dtype=fp64); 
-    p[: , 2] = np.array([0.5e0, 0.25e0, 0.25e0, d6], dtype=fp64); 
-    p[: , 2] *= np.array([3e0 * du - 1e0, dup ** 2, dum ** 2, du - 1e0]); 
+    p[span(1, 4), 1] = np.array([1, 0, 0, 0], dtype=fp64); 
+    p[span(1, 4), 2] = np.array([u, 0, 0, 0], dtype=fp64); 
+    p[span(1, 4), 3] = np.array([0.5e0, 0.25e0, 0.25e0, d6], dtype=fp64); 
+    p[span(1, 4), 3] *= np.array([3e0 * du - 1e0, dup ** 2, dum ** 2, du - 1e0]); 
     #利用二阶递推, 构造P1至P4从第四项起的所有内容
-    for idx in range(3, l1_max): 
-        idx1m = idx - 1; idx2m = idx - 2; 
-        c = coef[0:7, idx1m].flatten(); 
-        cu_1 = c[1] * u; cu_2 = c[5] * u; dl = fp64(idx2m); 
-        term_p_l1 = np.array([cu_1, cu_2 - c[6], cu_2 + c[6], cu_1]); 
-        term_p_l1 *= p[: , idxm1]; 
-        term_p_l3 = np.array([dl, c[7], c[7], c[3]]); 
-        term_p_l3 *= p[: , idxm2]; 
-        term_p_l2 = c[[0, 4, 4, 2]]; 
-        term_p_l2 *= (cp_l1 - cp_l3); 
-        p[:, idx] = term_p_l2; 
+    l_max = l1_max - 1; 
+    for l1 in do(3, l_max): 
+        c = coef[span(1, 8), l1].flatten(); 
+        cu_1 = c[2] * u; cu_2 = c[6] * u; 
+        l2 = l1 + 1; l3 = l1 - 1; 
+        dl = fp64(l3); 
+        term_p_l1 = \
+            np.array([cu_1, cu_2 - c[7], cu_2 + c[7], cu_1]) * p[span(1, 4), l1]; 
+        term_p_l3 = \
+            np.array([dl, c[8], c[8], c[4]]) * p[span(1, 4), l3]; 
+        term_p_l2 = c[[1, 5, 5, 3]] * (cp_l1 - cp_l3); 
+        p[span(1, 4), l2] = term_p_l2; 
 
     
