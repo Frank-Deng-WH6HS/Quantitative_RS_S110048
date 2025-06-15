@@ -7,11 +7,9 @@
 #注意: 本模块内所有需要传参的函数, 均需执行传入参数类型检查. 
 #当传入的实参类型与函数声明的形参类型不符时, 将抛出TypeError异常. 
 
-import inspect; 
-
 from . import np; 
-import pyfunc_type; 
 from numpy import float64 as fp64; 
+from . import pyfunc_type; 
 
 #获取当前系统浮点数的机器精度
 def machine_precision(): 
