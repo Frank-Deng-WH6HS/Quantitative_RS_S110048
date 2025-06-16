@@ -22,7 +22,7 @@ class LorentzMieScatteringConfig():
         self.integ_intvl_gauss_divis = 1; #NK, use n_k instead. 
         self.integ_intvl_power_law = 1; #NP, use n_p instead. 
         self.scattering_angle_divis = 1; #NPNA, use n_pna instead. 
-        self.scattering_matrix_accracy = np.nan; #DDELT
+        self.scattering_matrix_accuracy = np.nan; #DDELT
         
 
 #定义输出结果对象
@@ -35,6 +35,7 @@ class LorentzMieScatteringResult():
         self.variance_effective = np.nan; #VEFF
         self.cross_sectn_extinction = np.nan; #CEXT
         self.cross_sectn_scattering = np.nan; #CSCA
+        self.single_scattering_albedo = np.nan; #ARBEDO
         self.asymmetry_param = np.nan; #<COS>, also known as Q1
         self.area_projected_avg = np.nan; #<G>, also known as AREA
         self.volume_avg = np.nan; #<V>, also known as VOL

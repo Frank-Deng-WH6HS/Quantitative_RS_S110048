@@ -192,7 +192,7 @@ def gener(u: np.float64, l1_max: int,
     #利用二阶递推, 构造P1至P4从第四项起的所有内容
     l_max = l1_max - 1; 
     for l1 in do(3, l_max): 
-        c = coef[span(1, 8), l1].flatten(); 
+        c = coef[span(0, 8), l1].flatten(); 
         cu_1 = c[2] * u; cu_2 = c[6] * u; 
         l2 = l1 + 1; l3 = l1 - 1; 
         dl = fp64(l3); 
@@ -200,7 +200,7 @@ def gener(u: np.float64, l1_max: int,
             np.array([cu_1, cu_2 - c[7], cu_2 + c[7], cu_1]) * p[span(1, 4), l1]; 
         term_p_l3 = \
             np.array([dl, c[8], c[8], c[4]]) * p[span(1, 4), l3]; 
-        term_p_l2 = c[[1, 5, 5, 3]] * (cp_l1 - cp_l3); 
+        term_p_l2 = c[[1, 5, 5, 3]] * (term_p_l1 - term_p_l3); 
         p[span(1, 4), l2] = term_p_l2; 
 
     
