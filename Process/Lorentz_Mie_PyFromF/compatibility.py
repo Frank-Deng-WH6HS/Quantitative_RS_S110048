@@ -3,14 +3,12 @@
 
 from . import np; 
 from numpy import float64 as fp64; 
-from . import pyfunc_type; 
 
 #Fortran中的DO循环生成器
 #DO I=START,END
 #I从START开始每次循环加1, 直到END. END处仍循环最后一次(两端都包含)
 #对比: Python中range(start, end)只包含start, 不包含end
 def do(start: int, end: int): 
-    pyfunc_type.type_check(); 
     idx = start; 
     while idx <= end: 
         yield idx; 
@@ -18,7 +16,6 @@ def do(start: int, end: int):
         
 #与DO类似的数组切片对象, 同时包含start和end
 def span(start: int, end: int): 
-    pyfunc_type.type_check(); 
     return slice(start, end + 1, 1); 
         
 #Fortran中声明实数数组
