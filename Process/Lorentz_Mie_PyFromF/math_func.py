@@ -129,9 +129,9 @@ def gauss(n: int, ind_1: int, ind_2: int,
     for i in do(1, k): 
         m = n + 1 - i; 
         if i == 1: 
-            x = a - b /((f + a) * f); 
+            x = a - b / ((f + a) * f); 
         if i == 2: 
-            x = (z[n] - a) * fp64(4e0) + z[n]
+            x = (z[n] - a) * fp64(4e0) + z[n]; 
         if i == 3: 
             x = (z[n - 1] - z[n]) * fp64(1.6e0) + z[n - 1]; 
         if i > 3: 
@@ -139,7 +139,7 @@ def gauss(n: int, ind_1: int, ind_2: int,
         if i == k and ind == 1: 
             x = fp64(0e0); 
         n_iter = 0; 
-        check = machine_precision(); 
+        check = fp64(1e-16); #machine_precision(); 
         first_loop_lbl10 = True; 
         pb = np.inf; 
         while abs(pb) > check * abs(x) or first_loop_lbl10: 
@@ -185,22 +185,39 @@ def gener(u: np.float64, l1_max: int,
     pyfunc_type.type_check(); 
     dup = fp64(1e0) + u; dum = fp64(1e0) - u; du = u ** 2; 
     #计算P1(1), P1(2), P1(3), ..., P4(3)
+    '''
     p[span(1, 4), 1] = np.array([1, 0, 0, 0], dtype=fp64); 
     p[span(1, 4), 2] = np.array([u, 0, 0, 0], dtype=fp64); 
     p[span(1, 4), 3] = np.array([0.5e0, 0.25e0, 0.25e0, d6], dtype=fp64); 
     p[span(1, 4), 3] *= np.array([3e0 * du - 1e0, dup ** 2, dum ** 2, du - 1e0]); 
+    '''; 
+    p[1, 1] = 1; p[1, 2] = u; p[1, 3] = 0.5 * (3 * du - 1); 
+    p[2, 1] = 0; p[2, 2] = 0; p[2, 3] = 0.25 * dup ** 2; 
+    p[3, 1] = 0; p[3, 2] = 0; p[3, 3] = 0.25 * dum ** 2; 
+    p[4, 1] = 0; p[4, 2] = 0; p[4, 3] = d6 * (du - 1); 
     #利用二阶递推, 构造P1至P4从第四项起的所有内容
     l_max = l1_max - 1; 
     for l1 in do(3, l_max): 
+        '''
         c = coef[span(0, 8), l1].flatten(); 
+        '''; 
+        (c1, c2, c3, c4, c5, c6, c7, c8) = coef[[1, 2, 3, 4, 5, 6, 7, 8], l1]; 
+        '''
         cu_1 = c[2] * u; cu_2 = c[6] * u; 
+        '''; 
+        cu_1 = c2 * u; cu_2 = c6 * u; 
         l2 = l1 + 1; l3 = l1 - 1; 
         dl = fp64(l3); 
+        '''
         term_p_l1 = \
             np.array([cu_1, cu_2 - c[7], cu_2 + c[7], cu_1]) * p[span(1, 4), l1]; 
         term_p_l3 = \
             np.array([dl, c[8], c[8], c[4]]) * p[span(1, 4), l3]; 
         term_p_l2 = c[[1, 5, 5, 3]] * (term_p_l1 - term_p_l3); 
         p[span(1, 4), l2] = term_p_l2; 
-
+        '''; 
+        p[1, l2] = c1 * (cu_1 * p[1, l1] - dl * p[1, l3]); 
+        p[2, l2] = c5 * ((cu_2 - c7) * p[2, l1] - c8 * p[2, l3]); 
+        p[3, l2] = c5 * ((cu_2 + c7) * p[3, l1] - c8 * p[3, l3]); 
+        p[4, l2] = c3 * (cu_1 * p[4, l1] - c4 * p[4, l3]); 
     

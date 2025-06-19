@@ -61,15 +61,15 @@ def spher(
     n_k = config.integ_intvl_gauss_divis; 
     n_p = config.integ_intvl_power_law; 
     n_pna = config.scattering_angle_divis; 
-    d_delt = config.scattering_matrix_accracy; 
+    d_delt = config.scattering_matrix_accuracy; 
     #将传入的result中的属性值传送至函数内的局部变量
     n_mie = result.n_mie; 
     n_grad = 100000; #暂时与源代码中保持一致, 后续可能扩展
     n_pl = result.n_pl; 
     n_drdi = 3 * n_mie; 
-    f_ij = result.matr_elem; 
-    alpha = result.coeff_alpha; 
-    beta = result.coeff_beta; 
+    f_ij = result.matr_elem.copy(); 
+    alpha = result.coeff_alpha.copy(); 
+    beta = result.coeff_beta.copy(); 
     #声明数组
     psi = real(n_mie); hi = real(n_drdi); rpsi = real(n_drdi); 
     p = real(4, n_pl); 
@@ -163,42 +163,43 @@ def spher(
     sys.stderr.write(
         "Averaging over sizes...\n"
     ); sys.stderr.flush(); 
-    y = yy.copy(); zw = wy.copy(); 
-    rx = y * wn; rx_r = mr_r * rx; rx_i = mr_i * rx; 
-    cdd = rx_r ** 2 + rx_i ** 2; 
-    cd = np.sqrt(cdd); 
-    dc = np.cos(rx); ds = np.sin(rx); 
-    cx = 1 / rx; cx_r = rx_r / cdd; cx_i = -rx_i / cdd; 
     
     for i in do(1, n_nk): 
         #在控制台显示进度
         sys.stderr.write("Cycle: %5d of %5d" % (i, n_nk)); 
         sys.stderr.write("\x0d"); 
         #正式执行循环
-        m_1 = int(rx[i] + fp64(4.05e0) * np.cbrt(rx[i]) + fp64(8e0)); 
-        m_2 = m_1 + 2 + int(fp64(1.2e0) * np.sqrt(rx[i])) + 5; 
+        y = yy[i]; zw = wy[i]; 
+        rx = y * wn; rx_r = mr_r * rx; rx_i = mr_i * rx; 
+        cdd = rx_r ** 2 + rx_i ** 2; 
+        cd = np.sqrt(cdd); 
+        dc = np.cos(rx); ds = np.sin(rx); 
+        cx = fp64(1e0) / rx; cx_r = rx_r / cdd; cx_i = -rx_i / cdd; 
+        
+        m_1 = int(rx + fp64(4.05e0) * np.cbrt(rx) + fp64(8e0)); 
+        m_2 = m_1 + 2 + int(fp64(1.2e0) * np.sqrt(rx)) + 5; 
         if m_2 > n_drdi: 
             raise ValueError("m_2 > n_drdi. Evaluation terminated. "); 
         m_3 = m_2 - 1; 
-        q_max = np.max([fp64(m_1), cd[i]]); 
+        q_max = np.max([fp64(m_1), cd]); 
         m_4 = int(fp64(6.4e0) * np.cbrt(q_max) + q_max) + 8; 
         if m_4 > n_drdi: 
             raise ValueError("m_4 > n_drdi. Evaluation terminated. "); 
         d_4 = fp64(m_4 + 1); 
-        d_r[m_4] = d_4 * cx_r[i]; d_i[m_4] = d_4 * cx_i[i]; 
-        hi[1] = ds[i] + dc[i] * cx[i]; 
-        hi[2] = fp64(3e0) * hi[1] * cx[i] - dc[i]; 
-        psi[1] = cx[i] * ds[i] - dc[i]; 
-        rpsi[m_2] = rx[i] / fp64(2 * m_2 + 1); 
+        d_r[m_4] = d_4 * cx_r; d_i[m_4] = d_4 * cx_i; 
+        hi[1] = ds + dc * cx; 
+        hi[2] = fp64(3e0) * hi[1] * cx - dc 
+        psi[1] = cx * ds - dc; 
+        rpsi[m_2] = rx / fp64(2 * m_2 + 1); 
         for j in do(2, m_3): 
             j_1 = m_2 - j + 1; 
             rpsi[j_1] = fp64(1e0) / fp64(
-                (2 * j_1 + i) * cx[i] - rpsi[j_1 + 1]
+                (2 * j_1 + i) * cx - rpsi[j_1 + 1]
             ); 
         for j in do(2, m_4): 
             j_1 = m_4 - j + 2; j_2 = j_1 - 1; 
             d_j = fp64(j_1); 
-            f_r = d_j * cx_r[i]; f_i = d_j * cx_i[i]; 
+            f_r = d_j * cx_r; f_i = d_j * cx_i; 
             o_r = d_r[j_1] + f_r; o_i = d_i[j_1] + f_i; 
             o_ri = fp64(1e0) / (o_r ** 2 + o_i ** 2); 
             d_r[j_2] = f_r - o_r * o_ri; 
@@ -206,36 +207,36 @@ def spher(
         m_2 = m_1 - 1; 
         for j in do(2, m_2): 
             j_1 = j - 1; j_2 = j + 1; 
-            hi[j_2] = fp64(2 * j + 1) * hi[j] * cx[i] - hi[j_1]; 
+            hi[j_2] = fp64(2 * j + 1) * hi[j] * cx - hi[j_1]; 
         for j in do(2, m_1): 
             psi[j] = rpsi[j] * psi[j - 1]; 
         psi_1 = psi[1]; 
         d_r_1 = d_r[1]; 
         d_i_1 = d_i[1]; 
         hi_1 = hi[1]; 
-        o_r = d_r_1 * rm_r - d_i_1 * rm_i + cx[i];
-        o_r_1 = o_r * psi_1 - ds[i]; 
+        o_r = d_r_1 * rm_r - d_i_1 * rm_i + cx;
+        o_r_1 = o_r * psi_1 - ds; 
         o_i = d_r_1 * rm_i + d_i_1 * rm_r; 
         o_i_1 = o_i * psi_1; 
-        o_r_2 = o_r * psi_1 - o_i * hi_1 - ds[i]; 
-        o_i_2 = o_r * hi_1 + o_i * psi_1 - dc[i]; 
+        o_r_2 = o_r * psi_1 - o_i * hi_1 - ds; 
+        o_i_2 = o_r * hi_1 + o_i * psi_1 - dc; 
         #以下部分是复数除法, 但原作者甚至未将除法公式封装成函数...
         #复数除法在这个循环体当中出现了四次...
         o_ab = fp64(1e0) / (o_r_2 ** 2 + o_i_2 ** 2); 
         a_r[1] = (o_r_1 * o_r_2 + o_i_1 * o_i_2) * o_ab; 
         a_i[1] = (o_r_2 * o_i_1 - o_r_1 * o_i_2) * o_ab; 
-        o_r = mr_r * d_r_1 - mr_i * d_i_1 + cx[i]; 
+        o_r = mr_r * d_r_1 - mr_i * d_i_1 + cx; 
         o_i = mr_r * d_i_1 + mr_i * d_r_1; 
-        o_r_1 = o_r * psi_1 - ds[i]; 
-        o_r_2 = o_r * psi_1 - o_i * hi_1 - ds[i]; 
+        o_r_1 = o_r * psi_1 - ds; 
+        o_r_2 = o_r * psi_1 - o_i * hi_1 - ds; 
         o_i_1 = o_i * psi_1; 
-        o_i_2 = o_r * hi_1 + o_i * psi_1 - dc[i]; 
+        o_i_2 = o_r * hi_1 + o_i * psi_1 - dc; 
         o_ab = fp64(1e0) / (o_r_2 ** 2 + o_i_2 ** 2); 
         b_r[1] = (o_r_1 * o_r_2 + o_i_1 * o_i_2) * o_ab; 
         b_i[1] = (o_r_2 * o_i_1 - o_r_1 * o_i_2) * o_ab; 
         for j in do(2, m_1): 
             j_1 = j - 1; 
-            d_j = fp64(j) * cx[i]; 
+            d_j = fp64(j) * cx; 
             psi_1 = psi[j]; psi_2 = psi[j_1]; 
             hi_1 = hi[j]; hi_2 = hi[j_1]; 
             d_r_1 = d_r[j]; d_i_1 = d_i[j]; 
@@ -276,7 +277,7 @@ def spher(
             b_r[j] = cj * (a_rj - b_rj); 
             b_i[j] = cj * (a_ij - b_ij); 
         #Label 60: 
-        c_ext += zw[i] * ce; c_sca += zw[i] * cs; 
+        c_ext += zw * ce; c_sca += zw * cs; 
         for k in do(1, n_g): 
             angl(m_1, x[k], pin, taun, coeff); 
             sp_r = sp_i = sm_r = sm_i = fp64(0e0); 
@@ -285,15 +286,15 @@ def spher(
                 pp = tj + pj; pm = tj - pj; 
                 sp_r += a_r[j] * pp; 
                 sp_i += a_i[j] * pp; 
-                sm_r += b_r[j] * pp; 
-                sm_i += b_i[j] * pp; 
+                sm_r += b_r[j] * pm; 
+                sm_i += b_i[j] * pm; 
             #Label 65: 
-            d_1 = (sp_r ** 2 + sp_i ** 2) * zw[i]; 
-            d_2 = (sm_r ** 2 + sm_i ** 2) * zw[i]; 
+            d_1 = (sp_r ** 2 + sp_i ** 2) * zw; 
+            d_2 = (sm_r ** 2 + sm_i ** 2) * zw; 
             f_ij[1, k] += d_1 + d_2; 
             f_ij[2, k] += d_1 - d_2; 
-            f_ij[3, k] += (sp_r * sm_r + sp_i * sm_i) * zw[i] * fp64(2e0); 
-            f_ij[4, k] += (sp_r * sm_i - sp_i * sm_r) * zw[i] * fp64(2e0); 
+            f_ij[3, k] += (sp_r * sm_r + sp_i * sm_i) * zw * fp64(2e0); 
+            f_ij[4, k] += (sp_r * sm_i - sp_i * sm_r) * zw * fp64(2e0); 
         #Label 70: 
     #Label 100: 
     dd = fp64(2e0) / c_sca; 
@@ -315,7 +316,7 @@ def spher(
             fp64(1e0) / np.sqrt(fp64((l + 1) ** 2 - 4)), 
             np.sqrt(fp64(l ** 2 - 4)), 
             fp64(1e0) / (fp64(l) * fp64((l + 1) ** 2 - 4)), 
-            fp64(2* l + 1) * fp64(l * (l + 1)), 
+            fp64(2 * l + 1) * fp64(l * (l + 1)), 
             fp64((2 * l + 1) * 4), 
             fp64(l + 1) * fp64(l ** 2 - 4) 
         ], dtype=fp64); 
@@ -359,6 +360,9 @@ def spher(
     result.cross_sectn_scattering = c_sca; 
     result.single_scattering_albedo = alb; 
     result.asymmetry_param = alpha[1, 2] / fp64(3); 
+    result.matr_elem = f_ij; 
+    result.coeff_alpha = alpha; 
+    result.coeff_beta = beta; 
     sys.stderr.write(
         "Calculation finished. \n"
     ); sys.stderr.flush(); 
