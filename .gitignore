@@ -15,7 +15,8 @@
 Zotero_Record/*/
 Zotero_Record/zotero.sqlite?*
 
-Classware/*.pdf
+Classware/*
+Classware_*/*
 
 Material/*
 Source/*
